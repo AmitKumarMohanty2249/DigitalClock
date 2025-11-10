@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cinematic Neon Hologram Clock</title>
+
+    <style>
+      /* === GLOBAL RESET === */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Orbitron", "Poppins", sans-serif;
+        color: #fff;
+      }
+
+      /* === Gradient Background === */
+      body {
+        background: linear-gradient(-45deg, #0f1724, #1a237e, #00acc1, #8e24aa);
+        background-size: 400% 400%;
+        animation: bgShift 18s ease infinite;
+      }
+      @keyframes bgShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      /* --- Canvas galaxy background --- */
+      #bgCanvas {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        filter: contrast(1.1) brightness(1.15);
+      }
+
+      /* Rotating neon grid */
+      .grid {
+        position: fixed;
+        inset: -50%;
+        background-image: repeating-linear-gradient(
+            #0ff3 0 1px,
+            transparent 1px 40px
+          ),
+          repeating-linear-gradient(90deg, #0ff3 0 1px, transparent 1px 40px);
+        animation: rotateGrid 42s linear infinite;
+        z-index: 1;
+        opacity: 0.15;
+      }
+      @keyframes rotateGrid {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Border frame */
+      .border-frame {
+        position: fixed;
+        inset: 12px;
+        border-radius: 22px;
+        border: 6px solid rgba(0, 229, 255, 0.7);
+        box-shadow: 0 0 28px #0ff5, inset 0 0 18px #0ff3;
+        animation: framePulse 4s infinite alternate;
+        z-index: 8;
+      }
+      @keyframes framePulse {
+        0% {
+          opacity: 0.6;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      /* Scanline */
+      .scanline {
+        position: fixed;
+        width: 100%;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #0ff8, transparent);
+        animation: scan 7s linear infinite;
+        z-index: 9;
+      }
+      @keyframes scan {
+        0% {
+          top: -5%;
+        }
+        100% {
+          top: 105%;
+        }
+      }
+
+      /* Rings */
+      .pulse-ring {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 120vmin;
+        height: 120vmin;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 2px solid rgba(0, 229, 255, 0.3);
+        animation: ringPulse 6s infinite;
+        z-index: 2;
+      }
+      @keyframes ringPulse {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) scale(0.95);
+          opacity: 0.6;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.1);
+          opacity: 1;
+        }
+      }
+
+      .ripple {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 8vmin;
+        height: 8vmin;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 2px solid #0ff;
+        animation: ripple 6s infinite;
+        opacity: 0.25;
+        z-index: 2;
+      }
+      .ripple:nth-child(2) {
+        animation-delay: 2s;
+      }
+      .ripple:nth-child(3) {
+        animation-delay: 4s;
+      }
+      @keyframes ripple {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 0.3;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(5);
+          opacity: 0;
+        }
+      }
+
+      .holo-ring {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        width: 40vmin;
+        height: 40vmin;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 4px solid #0ff8;
+        box-shadow: 0 0 35px #0ff, inset 0 0 25px #0ff;
+        z-index: 4;
+        transition: 0.4s;
+      }
+
+      /* Text ring */
+      .ring-text {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 48vmin;
+        height: 48vmin;
+        z-index: 5;
+        filter: drop-shadow(0 0 14px #0ff);
+      }
+      .ring-text g {
+        transform-origin: center;
+        animation: spinText 22s linear infinite;
+      }
+      @keyframes spinText {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .ring-text text {
+        font-size: 20px;
+        letter-spacing: 6px;
+        fill: #b3ffff;
+        opacity: 0.85;
+      }
+
+      /* Clock UI */
+      .clock-wrap {
+        position: relative;
+        z-index: 6;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .clock {
+        display: flex;
+        gap: 3vw;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        transform-style: preserve-3d;
+      }
+
+      .box {
+        min-width: 220px;
+        padding: 40px;
+        background: rgba(10, 14, 30, 0.7);
+        border: 2px solid rgba(0, 229, 255, 0.3);
+        backdrop-filter: blur(20px);
+        border-radius: 25px;
+        box-shadow: 0 0 30px #0ff3, inset 0 0 20px #0ff2;
+        animation: boxGlow 3s infinite alternate;
+        transition: 0.4s;
+      }
+      @keyframes boxGlow {
+        0% {
+          box-shadow: 0 0 20px #0ff3;
+        }
+        100% {
+          box-shadow: 0 0 40px #0ff5;
+        }
+      }
+
+      .box:hover {
+        transform: translateY(-10px) rotateX(8deg) rotateY(6deg);
+      }
+
+      .label {
+        font-size: 1rem;
+        margin-bottom: 10px;
+        letter-spacing: 4px;
+        color: #b0bec5;
+      }
+      .value {
+        font-size: 8vw;
+        font-weight: 800;
+        line-height: 1;
+        text-shadow: 0 0 40px #fff4;
+      }
+
+      #hours {
+        color: #ffb86b;
+      }
+      #minutes {
+        color: #00e5ff;
+      }
+      #seconds {
+        color: #8c9eff;
+        animation: glitch 1s infinite alternate;
+      }
+      @keyframes glitch {
+        0%,
+        100% {
+          text-shadow: 0 0 20px #8c9eff;
+        }
+        50% {
+          text-shadow: 0 0 50px #8c9eff, 5px 0 #00e5ff;
+        }
+      }
+
+      #ampm {
+        text-align: center;
+        margin-top: 1vh;
+        font-size: 4vw;
+        font-weight: 800;
+        letter-spacing: 4px;
+        color: #ffeb3b;
+        text-shadow: 0 0 30px #ffeb3b;
+      }
+
+      #dateDisplay {
+        text-align: center;
+        margin-top: 1vh;
+        font-size: 2vw;
+        text-shadow: 0 0 20px #fff8;
+      }
+
+      /* Controls */
+      .controls {
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        z-index: 10;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        background: rgba(0, 20, 40, 0.6);
+        color: #dff;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid #0ff6;
+        cursor: pointer;
+        backdrop-filter: blur(7px);
+        box-shadow: 0 0 15px #0ff4;
+        font-weight: 600;
+      }
+      .btn.active {
+        background: rgba(0, 120, 140, 0.5);
+        box-shadow: 0 0 18px #0ff;
+        border-color: #0ff;
+      }
+
+      input[type="range"].btn {
+        appearance: none;
+        height: 16px;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        .box {
+          min-width: 40vw;
+        }
+        #ampm {
+          font-size: 8vw;
+        }
+        #dateDisplay {
+          font-size: 4vw;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <canvas id="bgCanvas"></canvas>
+    <div class="grid"></div>
+    <div class="border-frame"></div>
+    <div class="scanline"></div>
+
+    <!-- Rings -->
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="ripple"></div>
+    <div class="pulse-ring"></div>
+
+    <div class="holo-ring" id="holoRing"></div>
+
+    <!-- Rotating text ring -->
+    <svg class="ring-text" viewBox="0 0 500 500">
+      <defs>
+        <path
+          id="circlePath"
+          d="M 250, 250 m -200, 0 a 200,200 0 1,1 400,0 a 200,200 0 1,1 -400,0"
+        />
+      </defs>
+      <g>
+        <text>
+          <textPath href="#circlePath">
+            • HOLOGRAM CLOCK • NEON TIME INTERFACE • FUTURISTIC DISPLAY •
+          </textPath>
+        </text>
+      </g>
+    </svg>
+
+    <!-- Controls -->
+    <div class="controls">
+      <button class="btn" id="soundBtn">Enable Sound</button>
+      <button class="btn" id="meteorBtn">Meteors: On</button>
+      <button class="btn" id="starsBtn">Particles: On</button>
+      <button class="btn" id="modeBtn">24H: Off</button>
+
+      <select class="btn" id="tzSelect">
+        <option value="local">Local</option>
+        <option value="UTC">UTC</option>
+        <option value="Asia/Kolkata">India (IST)</option>
+        <option value="Asia/Dubai">Dubai (GST)</option>
+        <option value="Europe/London">London (GMT)</option>
+        <option value="America/New_York">New York (EST)</option>
+        <option value="Asia/Tokyo">Tokyo (JST)</option>
+      </select>
+
+      <select class="btn" id="soundTheme">
+        <option value="tick">Tick</option>
+        <option value="pulse">Pulse</option>
+        <option value="chime">Soft Chime</option>
+      </select>
+
+      <input
+        type="range"
+        id="volSlider"
+        class="btn"
+        min="0"
+        max="1"
+        step="0.01"
+        value="0.6"
+      />
+
+      <div class="btn" id="intensityBtn">Intensity: 100%</div>
+    </div>
+
+    <!-- Clock -->
+    <div class="clock-wrap">
+      <div class="clock">
+        <div class="box">
+          <div class="label">Hours</div>
+          <div class="value" id="hours">00</div>
+        </div>
+        <div class="box">
+          <div class="label">Minutes</div>
+          <div class="value" id="minutes">00</div>
+        </div>
+        <div class="box">
+          <div class="label">Seconds</div>
+          <div class="value" id="seconds">00</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ampm">AM</div>
+    <div id="dateDisplay"></div>
+
+    <script>
+      /* ✅ GALAXY BACKGROUND CANVAS ✅ */
+      const canvas = document.getElementById("bgCanvas");
+      const ctx = canvas.getContext("2d", { alpha: true });
+      let W,
+        H,
+        DPR = Math.min(2, window.devicePixelRatio || 1);
+
+      function resize() {
+        W = canvas.width = innerWidth * DPR;
+        H = canvas.height = innerHeight * DPR;
+        canvas.style.width = innerWidth + "px";
+        canvas.style.height = innerHeight + "px";
+      }
+      resize();
+      addEventListener("resize", resize);
+
+      /* Stars */
+      let starsOn = true;
+      const STAR_LAYERS = [
+        { count: 150, speed: 0.02, size: [0.6, 1.4], alpha: [0.3, 0.7] },
+        { count: 100, speed: 0.05, size: [0.8, 2], alpha: [0.4, 0.9] },
+        { count: 50, speed: 0.08, size: [1.2, 2.6], alpha: [0.6, 1] },
+      ];
+      let stars = [];
+      function rand(a, b) {
+        return a + Math.random() * (b - a);
+      }
+      function spawnStars() {
+        stars = [];
+        STAR_LAYERS.forEach((L, i) => {
+          for (let j = 0; j < L.count; j++) {
+            stars.push({
+              x: rand(0, W),
+              y: rand(0, H),
+              r: rand(L.size[0], L.size[1]) * DPR,
+              a: rand(L.alpha[0], L.alpha[1]),
+              tw: Math.random() * Math.PI * 2,
+              layer: i,
+            });
+          }
+        });
+      }
+      spawnStars();
+
+      /* Meteors */
+      let meteorsOn = true;
+      let meteors = [];
+      let intensity = 1.0;
+
+      function spawnMeteor() {
+        const side = Math.random() < 0.5;
+        const x = side ? rand(-W * 0.1, W * 0.4) : rand(W * 0.6, W * 1.1);
+        const y = side ? -50 * DPR : rand(H * 0.1, H * 0.4);
+        const speed = rand(6, 12) * DPR;
+        const angle = side
+          ? rand(0.2, 0.4) * Math.PI
+          : rand(0.65, 0.85) * Math.PI;
+        meteors.push({
+          x,
+          y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          life: 0,
+          maxLife: rand(60, 120),
+          len: rand(120, 220) * DPR,
+          width: rand(2, 4) * DPR,
+        });
+      }
+
+      /* Draw loop */
+      function draw() {
+        ctx.clearRect(0, 0, W, H);
+
+        // Nebula
+        const grd = ctx.createRadialGradient(
+          W / 2,
+          H / 2,
+          0,
+          W / 2,
+          H / 2,
+          Math.max(W, H) * 0.6
+        );
+        grd.addColorStop(0, "rgba(0,230,255,0.05)");
+        grd.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, W, H);
+
+        // Stars
+        if (starsOn) {
+          for (const s of stars) {
+            s.tw += 0.03;
+            const L = STAR_LAYERS[s.layer];
+            s.x += L.speed * intensity;
+            if (s.x > W) s.x = 0;
+            const alpha = s.a * (0.75 + 0.25 * Math.sin(s.tw));
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+            ctx.fillStyle = "#fff";
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1;
+        }
+
+        // Meteors
+        if (meteorsOn && Math.random() < 0.02 * intensity) spawnMeteor();
+
+        for (let i = meteors.length - 1; i >= 0; i--) {
+          const m = meteors[i];
+          m.life++;
+          m.x += m.vx;
+          m.y += m.vy;
+          const t = m.life / m.maxLife;
+          const fade = 1 - t;
+          const tailX = m.x - m.vx * (m.len / Math.hypot(m.vx, m.vy));
+          const tailY = m.y - m.vy * (m.len / Math.hypot(m.vx, m.vy));
+          const grad = ctx.createLinearGradient(m.x, m.y, tailX, tailY);
+          grad.addColorStop(0, `rgba(255,255,255,${0.9 * fade})`);
+          grad.addColorStop(1, `rgba(0,255,255,0)`);
+          ctx.strokeStyle = grad;
+          ctx.lineWidth = m.width;
+          ctx.beginPath();
+          ctx.moveTo(m.x, m.y);
+          ctx.lineTo(tailX, tailY);
+          ctx.stroke();
+
+          ctx.beginPath();
+          ctx.fillStyle = `rgba(255,255,255,${0.85 * fade})`;
+          ctx.arc(m.x, m.y, m.width * 1.2, 0, Math.PI * 2);
+          ctx.fill();
+
+          if (
+            m.life > m.maxLife ||
+            m.x < -200 ||
+            m.x > W + 200 ||
+            m.y > H + 200
+          )
+            meteors.splice(i, 1);
+        }
+
+        requestAnimationFrame(draw);
+      }
+      draw();
+
+      /* ✅ CLOCK LOGIC ✅ */
+
+      let use24Hour = false;
+      let customTZ = "local";
+
+      function getNow() {
+        if (customTZ === "local") return new Date();
+        return new Date(
+          new Date().toLocaleString("en-US", { timeZone: customTZ })
+        );
+      }
+
+      /* Display elements */
+      const elH = document.getElementById("hours");
+      const elM = document.getElementById("minutes");
+      const elS = document.getElementById("seconds");
+      const elAM = document.getElementById("ampm");
+      const elDate = document.getElementById("dateDisplay");
+      const holoRing = document.getElementById("holoRing");
+
+      function pad(n) {
+        return n < 10 ? "0" + n : n;
+      }
+
+      function updateClock() {
+        const now = getNow();
+        let h = now.getHours();
+        let m = now.getMinutes();
+        let s = now.getSeconds();
+
+        let displayH = use24Hour ? h : h % 12 || 12;
+
+        elH.textContent = pad(displayH);
+        elM.textContent = pad(m);
+        elS.textContent = pad(s);
+
+        elAM.style.opacity = use24Hour ? 0 : 1;
+        elAM.textContent = h >= 12 ? "PM" : "AM";
+
+        elDate.textContent = now.toLocaleDateString("en-US", {
+          timeZone:
+            customTZ === "local"
+              ? Intl.DateTimeFormat().resolvedOptions().timeZone
+              : customTZ,
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+
+        const rotateX = s * 6;
+        const rotateY = (s * 12) % 360;
+        const scale = 1 + Math.sin((s / 60) * Math.PI * 2) * 0.1;
+        const hue = (s * 6) % 360;
+        const color = `hsl(${hue}, 100%, 60%)`;
+        holoRing.style.transform = `translate(-50%,-50%) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(${scale})`;
+        holoRing.style.borderColor = color;
+        holoRing.style.boxShadow = `0 0 40px ${color}, inset 0 0 25px ${color}`;
+      }
+      setInterval(updateClock, 1000);
+      updateClock();
+
+      /* ✅ AUDIO SYSTEM ✅ */
+      let audioCtx,
+        masterGain,
+        audioStarted = false;
+
+      function initAudio() {
+        audioCtx = new AudioContext();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = 0.6;
+        masterGain.connect(audioCtx.destination);
+        audioStarted = true;
+      }
+
+      let soundTheme = "tick";
+      document.getElementById("soundTheme").addEventListener("change", (e) => {
+        soundTheme = e.target.value;
+      });
+
+      document.getElementById("volSlider").addEventListener("input", (e) => {
+        if (masterGain) masterGain.gain.value = e.target.value;
+      });
+
+      /* Ping sound each second */
+      let lastSec = -1;
+      function ping() {
+        if (!audioStarted) return;
+        const t = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.connect(g);
+        g.connect(masterGain);
+
+        if (soundTheme === "tick") {
+          osc.type = "square";
+          osc.frequency.setValueAtTime(1000, t);
+          g.gain.setValueAtTime(0.12, t);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+        }
+        if (soundTheme === "pulse") {
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(200, t);
+          g.gain.setValueAtTime(0.08, t);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+        }
+        if (soundTheme === "chime") {
+          osc.type = "triangle";
+          osc.frequency.setValueAtTime(1500, t);
+          osc.frequency.exponentialRampToValueAtTime(350, t + 0.3);
+          g.gain.setValueAtTime(0.18, t);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+        }
+
+        osc.start(t);
+        osc.stop(t + 1);
+      }
+
+      setInterval(() => {
+        const s = getNow().getSeconds();
+        if (s !== lastSec) {
+          lastSec = s;
+          ping();
+        }
+      }, 100);
+
+      /* Controls */
+      document
+        .getElementById("soundBtn")
+        .addEventListener("click", async () => {
+          if (!audioStarted) {
+            initAudio();
+            if (audioCtx.state === "suspended") await audioCtx.resume();
+            soundBtn.textContent = "Sound: On";
+            soundBtn.classList.add("active");
+          } else {
+            if (audioCtx.state === "running") {
+              await audioCtx.suspend();
+              soundBtn.textContent = "Sound: Off";
+              soundBtn.classList.remove("active");
+            } else {
+              await audioCtx.resume();
+              soundBtn.textContent = "Sound: On";
+              soundBtn.classList.add("active");
+            }
+          }
+        });
+
+      document.getElementById("meteorBtn").addEventListener("click", () => {
+        meteorsOn = !meteorsOn;
+        meteorBtn.textContent = `Meteors: ${meteorsOn ? "On" : "Off"}`;
+        meteorBtn.classList.toggle("active", meteorsOn);
+      });
+
+      document.getElementById("starsBtn").addEventListener("click", () => {
+        starsOn = !starsOn;
+        starsBtn.textContent = `Particles: ${starsOn ? "On" : "Off"}`;
+        starsBtn.classList.toggle("active", starsOn);
+      });
+
+      document.getElementById("modeBtn").addEventListener("click", () => {
+        use24Hour = !use24Hour;
+        modeBtn.textContent = `24H: ${use24Hour ? "On" : "Off"}`;
+        updateClock();
+      });
+
+      document.getElementById("tzSelect").addEventListener("change", (e) => {
+        customTZ = e.target.value;
+        updateClock();
+      });
+
+      document.getElementById("intensityBtn").addEventListener("click", () => {
+        intensity += 0.25;
+        if (intensity > 1) intensity = 0.25;
+        intensityBtn.textContent = `Intensity: ${(intensity * 100).toFixed(
+          0
+        )}%`;
+      });
+    </script>
+  </body>
+</html>

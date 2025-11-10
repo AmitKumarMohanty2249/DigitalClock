@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Reactive Neon Hologram Clock</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Orbitron", "Poppins", sans-serif;
+      }
+
+      /* === Animated Gradient Background with Neon Sweep === */
+      body {
+        background: linear-gradient(-45deg, #0f1724, #1a237e, #00acc1, #8e24aa);
+        background-size: 400% 400%;
+        animation: gradientShift 15s ease infinite;
+        position: relative;
+        color: #fff;
+      }
+
+      @keyframes gradientShift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      /* === Neon Sweep Scanline Effect === */
+      .scanline {
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        background: rgba(0, 255, 255, 0.3);
+        animation: scanAnim 6s linear infinite;
+        z-index: 10;
+      }
+      @keyframes scanAnim {
+        0% {
+          top: -5%;
+        }
+        100% {
+          top: 105%;
+        }
+      }
+
+      /* === Rotating Neon Grid layer === */
+      .grid {
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        top: -50%;
+        left: -50%;
+        background-image: repeating-linear-gradient(
+            #0ff3 0 1px,
+            transparent 1px 40px
+          ),
+          repeating-linear-gradient(90deg, #0ff3 0 1px, transparent 1px 40px);
+        animation: rotateGrid 40s linear infinite;
+        z-index: 0;
+      }
+      @keyframes rotateGrid {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* === Glowing Border Frame === */
+      .border-frame {
+        position: absolute;
+        inset: 0;
+        border: 6px solid rgba(0, 229, 255, 0.7);
+        border-radius: 20px;
+        box-shadow: 0 0 25px rgba(0, 229, 255, 0.5),
+          inset 0 0 25px rgba(0, 229, 255, 0.4);
+        animation: pulseFrame 4s infinite alternate;
+        z-index: 5;
+      }
+      @keyframes pulseFrame {
+        0% {
+          opacity: 0.6;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      /* === Outer Pulsing Ring === */
+      .pulse-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 120vmin;
+        height: 120vmin;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 2px solid rgba(0, 229, 255, 0.3);
+        animation: ringPulse 6s infinite ease-in-out;
+      }
+      @keyframes ringPulse {
+        0%,
+        100% {
+          transform: translate(-50%, -50%) scale(0.95);
+          opacity: 0.5;
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.1);
+          opacity: 1;
+        }
+      }
+
+      /* === Ripple Rings === */
+      .ripple {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 10vmin;
+        height: 10vmin;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 2px solid #0ff;
+        animation: rippleAnim 6s infinite;
+        opacity: 0.5;
+      }
+      @keyframes rippleAnim {
+        0% {
+          transform: translate(-50%, -50%) scale(1);
+          opacity: 0.3;
+        }
+        100% {
+          transform: translate(-50%, -50%) scale(4);
+          opacity: 0;
+        }
+      }
+
+      /* === Hologram Ring === */
+      .holo-ring {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 40vmin;
+        height: 40vmin;
+        transform: translate(-50%, -50%);
+        border-radius: 50%;
+        border: 4px solid rgba(0, 229, 255, 0.6);
+        transition: all 0.4s ease;
+        box-shadow: 0 0 40px #0ff, inset 0 0 25px #0ff;
+      }
+
+      /* === Clock Container === */
+      .clock-container {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 12;
+        position: relative;
+      }
+
+      /* === Time Boxes with Glow Pulse === */
+      .clock {
+        display: flex;
+        gap: 3vw;
+      }
+
+      .box {
+        min-width: 200px;
+        padding: 40px;
+        background: rgba(10, 14, 30, 0.7);
+        border: 2px solid rgba(0, 229, 255, 0.3);
+        border-radius: 25px;
+        backdrop-filter: blur(20px);
+        box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
+        animation: glowPulse 2s infinite alternate;
+        transform-style: preserve-3d;
+        transition: 0.5s;
+      }
+
+      @keyframes glowPulse {
+        0% {
+          box-shadow: 0 0 20px #0ff5;
+        }
+        100% {
+          box-shadow: 0 0 40px #0ff9;
+        }
+      }
+
+      .box:hover {
+        transform: translateY(-10px) rotateX(8deg) rotateY(8deg);
+      }
+
+      .label {
+        font-size: 1.4vw;
+        color: #b0bec5;
+        letter-spacing: 3px;
+        margin-bottom: 10px;
+      }
+
+      .value {
+        font-size: 9vw;
+        font-weight: 700;
+        text-shadow: 0 0 50px rgba(255, 255, 255, 0.4);
+        transition: all 0.4s ease;
+      }
+
+      /* === Glitch Seconds Effect === */
+      #seconds {
+        animation: glitch 1s infinite alternate;
+      }
+
+      @keyframes glitch {
+        0%,
+        100% {
+          text-shadow: 0 0 20px #8c9eff;
+        }
+        50% {
+          text-shadow: 0 0 50px #8c9eff, 5px 0 #00e5ff;
+        }
+      }
+
+      /* === Colors === */
+      #hours {
+        color: #ffb86b;
+      }
+      #minutes {
+        color: #00e5ff;
+      }
+      #seconds {
+        color: #8c9eff;
+      }
+
+      #ampm {
+        font-size: 4vw;
+        margin-top: 2vh;
+        color: gold;
+        text-shadow: 0 0 30px gold;
+      }
+
+      #dateDisplay {
+        font-size: 2vw;
+        margin-top: 1vh;
+        text-shadow: 0 0 20px #fff8;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Neon Scanline -->
+    <div class="scanline"></div>
+
+    <!-- Rotating Grid -->
+    <div class="grid"></div>
+
+    <!-- Glowing Border -->
+    <div class="border-frame"></div>
+
+    <!-- Ripple Effects -->
+    <div class="ripple"></div>
+
+    <!-- Outer Animated Ring -->
+    <div class="pulse-ring"></div>
+
+    <!-- Hologram Center Ring -->
+    <div id="holoRing" class="holo-ring"></div>
+
+    <!-- Clock -->
+    <div class="clock-container">
+      <div class="clock">
+        <div class="box">
+          <div class="label">Hours</div>
+          <div class="value" id="hours">00</div>
+        </div>
+        <div class="box">
+          <div class="label">Minutes</div>
+          <div class="value" id="minutes">00</div>
+        </div>
+        <div class="box">
+          <div class="label">Seconds</div>
+          <div class="value" id="seconds">00</div>
+        </div>
+      </div>
+
+      <div id="ampm">AM</div>
+      <div id="dateDisplay"></div>
+    </div>
+
+    <script>
+      const holoRing = document.getElementById("holoRing");
+
+      function pad(n) {
+        return String(n).padStart(2, "0");
+      }
+
+      function updateClock() {
+        const now = new Date();
+        let h = now.getHours();
+        const m = now.getMinutes();
+        const s = now.getSeconds();
+        const ampm = h >= 12 ? "PM" : "AM";
+        h = h % 12 || 12;
+
+        updateValue("hours", pad(h));
+        updateValue("minutes", pad(m));
+        updateValue("seconds", pad(s));
+
+        document.getElementById("ampm").textContent = ampm;
+
+        document.getElementById("dateDisplay").textContent =
+          now.toLocaleDateString(undefined, {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+
+        const hue = (s * 6) % 360;
+        const ringColor = `hsl(${hue}, 100%, 60%)`;
+
+        holoRing.style.borderColor = ringColor;
+        holoRing.style.boxShadow = `0 0 40px ${ringColor}, inset 0 0 25px ${ringColor}`;
+        holoRing.style.transform = `
+          translate(-50%, -50%)
+          rotateX(${s * 6}deg)
+          rotateY(${s * 12}deg)
+          scale(${1 + Math.sin((s / 60) * Math.PI * 2) * 0.1})
+        `;
+      }
+
+      function updateValue(id, val) {
+        const el = document.getElementById(id);
+        if (el.textContent !== val) {
+          el.textContent = val;
+        }
+      }
+
+      setInterval(updateClock, 1000);
+      updateClock();
+    </script>
+  </body>
+</html>

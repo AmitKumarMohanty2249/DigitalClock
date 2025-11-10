@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>24-Hour Split Clock</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --hour-color: #ff6b6b; /* color for hour */
+        --minsec-color: #4fd1c5; /* color for minutes & seconds */
+      }
+
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: radial-gradient(circle at center, #0a1428, #030712);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: "Poppins", sans-serif;
+        color: #e5e7eb;
+      }
+
+      .container {
+        display: flex;
+        gap: 40px;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .clock {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+      }
+
+      .face {
+        position: relative;
+        width: 280px;
+        height: 280px;
+        border-radius: 50%;
+        margin: 10px auto;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(255, 255, 255, 0.05),
+          transparent
+        );
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+      }
+
+      .hour-mark {
+        position: absolute;
+        width: 24px;
+        height: 24px;
+        text-align: center;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.8);
+        transform-origin: center center;
+      }
+
+      .hand {
+        position: absolute;
+        width: 4px;
+        background: var(--hour-color);
+        height: 40%;
+        bottom: 50%;
+        left: 50%;
+        transform-origin: bottom center;
+        border-radius: 4px;
+        transform: rotate(0deg);
+        transition: transform 0.4s cubic-bezier(0.4, 0.2, 0.2, 1);
+      }
+
+      .pin {
+        width: 12px;
+        height: 12px;
+        background: #fff;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .big-num {
+        font-size: 36px;
+        font-weight: bold;
+        color: var(--hour-color);
+      }
+
+      .minsec-face {
+        position: relative;
+        width: 280px;
+        height: 280px;
+        border-radius: 50%;
+        margin: 10px auto;
+        background: radial-gradient(
+          circle at 30% 30%,
+          rgba(255, 255, 255, 0.05),
+          transparent
+        );
+        box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.6);
+      }
+
+      .minute-hand {
+        background: var(--minsec-color);
+        width: 3px;
+        height: 45%;
+        position: absolute;
+        bottom: 50%;
+        left: 50%;
+        transform-origin: bottom center;
+        border-radius: 4px;
+        transition: transform 0.4s cubic-bezier(0.4, 0.2, 0.2, 1);
+      }
+
+      .second-hand {
+        background: var(--minsec-color);
+        width: 2px;
+        height: 50%;
+        position: absolute;
+        bottom: 50%;
+        left: 50%;
+        transform-origin: bottom center;
+        border-radius: 2px;
+        transition: transform 0.1s linear;
+      }
+
+      .minsec-pin {
+        width: 10px;
+        height: 10px;
+        background: #fff;
+        border-radius: 50%;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+
+      .label {
+        font-size: 18px;
+        font-weight: 600;
+        margin-top: 6px;
+        opacity: 0.85;
+      }
+
+      .value {
+        font-size: 22px;
+        font-weight: bold;
+        color: var(--minsec-color);
+      }
+
+      @media (max-width: 700px) {
+        .face,
+        .minsec-face {
+          width: 220px;
+          height: 220px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- 24-hour clock -->
+      <div class="clock">
+        <div class="face" id="hourFace">
+          <div class="hand" id="hourHand"></div>
+          <div class="pin"></div>
+        </div>
+        <div class="big-num" id="hourNum">--</div>
+        <div class="label">Hour (24-hour)</div>
+      </div>
+
+      <!-- Minutes + seconds clock -->
+      <div class="clock">
+        <div class="minsec-face">
+          <div class="minute-hand" id="minuteHand"></div>
+          <div class="second-hand" id="secondHand"></div>
+          <div class="minsec-pin"></div>
+        </div>
+        <div class="value">
+          Min: <span id="minuteNum">--</span> | Sec:
+          <span id="secondNum">--</span>
+        </div>
+        <div class="label">Minutes & Seconds</div>
+      </div>
+    </div>
+
+    <script>
+      const hourFace = document.getElementById("hourFace");
+      const hourHand = document.getElementById("hourHand");
+      const hourNum = document.getElementById("hourNum");
+      const minuteHand = document.getElementById("minuteHand");
+      const secondHand = document.getElementById("secondHand");
+      const minuteNum = document.getElementById("minuteNum");
+      const secondNum = document.getElementById("secondNum");
+
+      // Add 24-hour marks around the clock
+      for (let i = 0; i < 24; i++) {
+        const mark = document.createElement("div");
+        mark.classList.add("hour-mark");
+        const angle = i * 15; // 360 / 24 = 15 degrees per hour
+        const radius = 115;
+        const x = 140 + radius * Math.sin((angle * Math.PI) / 180);
+        const y = 140 - radius * Math.cos((angle * Math.PI) / 180);
+        mark.style.left = `${x - 12}px`;
+        mark.style.top = `${y - 12}px`;
+        mark.textContent = i.toString().padStart(2, "0");
+        hourFace.appendChild(mark);
+      }
+
+      function updateClock() {
+        const now = new Date();
+        const hours = now.getHours();
+        const minutes = now.getMinutes();
+        const seconds = now.getSeconds();
+        const ms = now.getMilliseconds();
+
+        // 24-hour rotation (360° / 24 = 15° per hour)
+        const hourAngle = (hours + minutes / 60 + seconds / 3600) * 15;
+        const minuteAngle = (minutes + seconds / 60) * 6;
+        const secondAngle = (seconds + ms / 1000) * 6;
+
+        hourHand.style.transform = `rotate(${hourAngle}deg)`;
+        minuteHand.style.transform = `rotate(${minuteAngle}deg)`;
+        secondHand.style.transform = `rotate(${secondAngle}deg)`;
+
+        hourNum.textContent = hours.toString().padStart(2, "0");
+        minuteNum.textContent = minutes.toString().padStart(2, "0");
+        secondNum.textContent = seconds.toString().padStart(2, "0");
+      }
+
+      updateClock();
+      setInterval(updateClock, 80);
+    </script>
+  </body>
+</html>

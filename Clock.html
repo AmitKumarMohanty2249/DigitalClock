@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Digital Clock — Hours / Minutes / Seconds in Separate Boxes</title>
+    <style>
+      :root {
+        --bg: #0f1724;
+        --card: #0b1220;
+        --glass: rgba(255, 255, 255, 0.03);
+        --accent-h: #ffb86b;
+        --accent-m: #7ee7c9;
+        --accent-s: #8ea7ff;
+        --text: #e6eef8;
+        --muted: rgba(230, 238, 248, 0.65);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+          Roboto, "Helvetica Neue", Arial;
+      }
+      body {
+        background: radial-gradient(
+            1200px 600px at 10% 10%,
+            rgba(110, 84, 255, 0.08),
+            transparent
+          ),
+          radial-gradient(
+            900px 500px at 90% 90%,
+            rgba(0, 210, 255, 0.03),
+            transparent
+          ),
+          var(--bg);
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+
+      .clock-wrap {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          rgba(255, 255, 255, 0.01)
+        );
+        border-radius: 18px;
+        padding: 28px;
+        display: flex;
+        gap: 18px;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        box-shadow: 0 10px 30px rgba(2, 6, 23, 0.6);
+        max-width: 900px;
+        width: 100%;
+      }
+
+      .clock {
+        display: flex;
+        gap: 14px;
+        align-items: center;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .box {
+        min-width: 120px;
+        flex: 1 1 120px;
+        max-width: 220px;
+        padding: 18px 22px;
+        border-radius: 12px;
+        background: linear-gradient(180deg, var(--card), var(--glass));
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(6px);
+        transition: transform 0.25s ease, box-shadow 0.25s ease;
+      }
+      .box:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 8px 30px rgba(2, 6, 23, 0.5);
+      }
+
+      .label {
+        font-size: 13px;
+        color: var(--muted);
+        letter-spacing: 1px;
+        margin-bottom: 8px;
+      }
+      .value {
+        font-weight: 700;
+        font-size: 56px;
+        line-height: 1;
+        color: var(--text);
+        display: flex;
+        gap: 8px;
+        align-items: baseline;
+      }
+
+      .box.hr {
+        border: 1px solid rgba(255, 184, 107, 0.08);
+        box-shadow: 0 6px 18px rgba(255, 184, 107, 0.06);
+      }
+      .box.hr .dot {
+        background: var(--accent-h);
+      }
+
+      .box.min {
+        border: 1px solid rgba(126, 231, 201, 0.06);
+        box-shadow: 0 6px 18px rgba(126, 231, 201, 0.04);
+      }
+      .box.min .dot {
+        background: var(--accent-m);
+      }
+
+      .box.sec {
+        border: 1px solid rgba(142, 167, 255, 0.06);
+        box-shadow: 0 6px 18px rgba(142, 167, 255, 0.04);
+      }
+      .box.sec .dot {
+        background: var(--accent-s);
+      }
+
+      .dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        margin-left: 6px;
+        box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
+      }
+
+      #ampm {
+        font-size: 32px;
+        font-weight: 700;
+        color: var(--accent-h);
+        margin-top: 10px;
+        text-shadow: 0 0 8px rgba(255, 184, 107, 0.4);
+        letter-spacing: 2px;
+      }
+
+      #dateDisplay {
+        font-size: 20px;
+        color: var(--accent-s);
+        margin-top: 5px;
+        text-shadow: 0 0 6px rgba(142, 167, 255, 0.3);
+        font-weight: 500;
+        text-align: center;
+      }
+
+      @media (max-width: 640px) {
+        .value {
+          font-size: 42px;
+        }
+        .box {
+          padding: 14px;
+        }
+        #ampm {
+          font-size: 24px;
+        }
+        #dateDisplay {
+          font-size: 16px;
+        }
+      }
+
+      .tick-up {
+        animation: popUp 0.28s ease;
+      }
+      @keyframes popUp {
+        from {
+          transform: translateY(6px) scale(0.98);
+          opacity: 0.6;
+        }
+        to {
+          transform: none;
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="clock-wrap">
+      <h2 style="margin: 0 0 8px 0; font-weight: 600">Digital Clock</h2>
+      <div class="clock">
+        <div class="box hr" id="box-hr">
+          <div class="label">HOURS <span class="dot"></span></div>
+          <div class="value" id="hours">00</div>
+        </div>
+
+        <div class="box min" id="box-min">
+          <div class="label">MINUTES <span class="dot"></span></div>
+          <div class="value" id="minutes">00</div>
+        </div>
+
+        <div class="box sec" id="box-sec">
+          <div class="label">SECONDS <span class="dot"></span></div>
+          <div class="value" id="seconds">00</div>
+        </div>
+      </div>
+
+      <div id="ampm">AM</div>
+      <div id="dateDisplay"></div>
+    </div>
+
+    <script>
+      (function () {
+        const elH = document.getElementById("hours");
+        const elM = document.getElementById("minutes");
+        const elS = document.getElementById("seconds");
+        const boxH = document.getElementById("box-hr");
+        const boxM = document.getElementById("box-min");
+        const boxS = document.getElementById("box-sec");
+        const ampmEl = document.getElementById("ampm");
+        const dateEl = document.getElementById("dateDisplay");
+
+        function pad(n) {
+          return String(n).padStart(2, "0");
+        }
+
+        function updateClock() {
+          const now = new Date();
+          let h = now.getHours();
+          const m = now.getMinutes();
+          const s = now.getSeconds();
+
+          const ampm = h >= 12 ? "PM" : "AM";
+          h = h % 12 || 12;
+
+          setValue(elH, pad(h), boxH);
+          setValue(elM, pad(m), boxM);
+          setValue(elS, pad(s), boxS);
+
+          ampmEl.textContent = ampm;
+
+          const dateStr = now.toLocaleDateString(undefined, {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
+          });
+          dateEl.textContent = dateStr;
+        }
+
+        function setValue(el, text, container) {
+          if (el.textContent !== text) {
+            el.textContent = text;
+            container.classList.remove("tick-up");
+            void container.offsetWidth;
+            container.classList.add("tick-up");
+          }
+        }
+
+        function start() {
+          updateClock();
+          const now = Date.now();
+          const delay = 1000 - (now % 1000);
+          setTimeout(() => {
+            updateClock();
+            setInterval(updateClock, 1000);
+          }, delay);
+        }
+
+        start();
+      })();
+    </script>
+  </body>
+</html>
